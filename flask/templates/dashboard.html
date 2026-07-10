@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waste Processing Plant - Fog Edge Monitoring</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cGF0aCBkPSJNMzYgMTlhNCA0IDAgMCAxLTQgNGgtNGE0IDQgMCAwIDEtNC00VjhhNCA0IDAgMCAxIDQtNGg0YTQgNCAwIDAgMSA0IDR6IiBmaWxsPSIjZTBlMGUwIiBmaWxsLW9wYWNpdHk9IjAuNCIvPjwvc3ZnPg==');
+            background-size: 60px 60px;
+        }
+        
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-left .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+            letter-spacing: -0.5px;
+        }
+        
+        .header h1 span {
+            color: #3498db;
+            font-weight: 300;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+        
+        .status-badge.normal {
+            background: #27ae60;
+            color: #fff;
+            box-shadow: 0 2px 12px rgba(39, 174, 96, 0.3);
+        }
+        
+        .status-badge.warning {
+            background: #f39c12;
+            color: #fff;
+            box-shadow: 0 2px 12px rgba(243, 156, 18, 0.3);
+        }
+        
+        .status-badge.critical {
+            background: #e74c3c;
+            color: #fff;
+            box-shadow: 0 2px 12px rgba(231, 76, 60, 0.3);
+        }
+        
+        .status-badge.unknown {
+            background: #95a5a6;
+            color: #fff;
+        }
+        
+        .timestamp-display {
+            font-size: 13px;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        
+        .btn-refresh {
+            background: #3498db;
+            color: #fff;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-refresh:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-refresh:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        /* Sensor Cards Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+        
+        .sensor-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .sensor-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .sensor-card .label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        
+        .sensor-card .value {
+            font-size: 30px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 2px;
+        }
+        
+        .sensor-card .unit {
+            font-size: 13px;
+            color: #95a5a6;
+            font-weight: 500;
+        }
+        
+        .sensor-card .status-tag {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+        
+        .sensor-card .status-tag.normal {
+            background: #d5f5e3;
+            color: #1a7a42;
+        }
+        
+        .sensor-card .status-tag.warning {
+            background: #fdebd0;
+            color: #b9770e;
+        }
+        
+        .sensor-card .status-tag.critical {
+            background: #fadbd8;
+            color: #922b21;
+        }
+        
+        /* Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            margin-bottom: 25px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        
+        .card h3 {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 16px;
+            letter-spacing: -0.2px;
+        }
+        
+        .card h3 .badge-count {
+            background: #3498db;
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 280px;
+        }
+        
+        .chart-container-small {
+            position: relative;
+            height: 240px;
+        }
+        
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        
+        table th {
+            text-align: left;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            color: #7f8c8d;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f2f6;
+            color: #2c3e50;
+        }
+        
+        table tr:hover td {
+            background: #f8f9fa;
+        }
+        
+        .alert-row.critical {
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .alert-row.warning {
+            border-left: 4px solid #f39c12;
+        }
+        
+        .alert-row.normal {
+            border-left: 4px solid #27ae60;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .badge.critical {
+            background: #fadbd8;
+            color: #922b21;
+        }
+        
+        .badge.warning {
+            background: #fdebd0;
+            color: #b9770e;
+        }
+        
+        .badge.normal {
+            background: #d5f5e3;
+            color: #1a7a42;
+        }
+        
+        .badge.unknown {
+            background: #e8e8e8;
+            color: #7f8c8d;
+        }
+        
+        .alert-text {
+            font-size: 12px;
+            color: #555;
+        }
+        
+        .alert-text .critical-text {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        .alert-text .warning-text {
+            color: #f39c12;
+            font-weight: 600;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #95a5a6;
+            font-weight: 500;
+        }
+        
+        /* Stats Container */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-item {
+            background: #f8f9fa;
+            padding: 14px 18px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .stat-item .stat-label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        .stat-item .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-top: 4px;
+        }
+        
+        .stat-item .stat-sub {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 2px;
+        }
+        
+        .refresh-info {
+            text-align: center;
+            color: #95a5a6;
+            font-size: 12px;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+                padding: 16px 20px;
+            }
+            
+            .header-left {
+                justify-content: center;
+            }
+            
+            .header-right {
+                justify-content: center;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 12px;
+            }
+            
+            .sensor-card .value {
+                font-size: 24px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            }
+            
+            .card {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="logo-icon">WP</div>
+                <h1>Waste<span>Processing</span> · Fog Edge</h1>
+            </div>
+            <div class="header-right">
+                <span id="systemStatusBadge" class="status-badge unknown">Connecting</span>
+                <span class="timestamp-display" id="timestamp">Last update: --</span>
+                <button class="btn-refresh" onclick="refreshData()">
+                    <span>↻</span> Refresh
+                </button>
+            </div>
+        </div>
+        
+        <!-- Sensor Cards -->
+        <div class="grid" id="sensorGrid">
+            <div class="sensor-card" id="sensor-ph">
+                <div class="label">pH Level</div>
+                <div class="value" id="ph-value">--</div>
+                <div class="unit">pH</div>
+                <span class="status-tag normal" id="ph-status">Normal</span>
+            </div>
+            <div class="sensor-card" id="sensor-air">
+                <div class="label">Air Quality</div>
+                <div class="value" id="air-value">--</div>
+                <div class="unit">AQI</div>
+                <span class="status-tag normal" id="air-status">Normal</span>
+            </div>
+            <div class="sensor-card" id="sensor-temp">
+                <div class="label">Temperature</div>
+                <div class="value" id="temp-value">--</div>
+                <div class="unit">°C</div>
+                <span class="status-tag normal" id="temp-status">Normal</span>
+            </div>
+            <div class="sensor-card" id="sensor-weight">
+                <div class="label">Weight</div>
+                <div class="value" id="weight-value">--</div>
+                <div class="unit">kg</div>
+                <span class="status-tag normal" id="weight-status">Normal</span>
+            </div>
+            <div class="sensor-card" id="sensor-pressure">
+                <div class="label">Pressure</div>
+                <div class="value" id="pressure-value">--</div>
+                <div class="unit">hPa</div>
+                <span class="status-tag normal" id="pressure-status">Normal</span>
+            </div>
+            <div class="sensor-card" id="sensor-gas">
+                <div class="label">Gas Concentration</div>
+                <div class="value" id="gas-value">--</div>
+                <div class="unit">ppm</div>
+                <span class="status-tag normal" id="gas-status">Normal</span>
+            </div>
+        </div>
+        
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Sensor Trends</h3>
+                    <span style="font-size:12px;color:#95a5a6;">Last 20 readings</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Status Distribution</h3>
+                </div>
+                <div class="chart-container-small">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alerts -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Active Alerts <span class="badge-count" id="alertCount">0</span></h3>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Device</th>
+                            <th>Status</th>
+                            <th>Alert Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alertsBody">
+                        <tr>
+                            <td colspan="4" class="loading">No active alerts</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Statistics -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Statistical Summary</h3>
+            </div>
+            <div id="statsContainer">
+                <div class="loading">Loading statistics...</div>
+            </div>
+        </div>
+        
+        <div class="refresh-info">
+            Auto-refresh every <span id="refreshInterval">{{ refresh_interval }}</span> seconds · Data source: DynamoDB
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        const REFRESH_INTERVAL = {{ refresh_interval }} * 1000;
+        
+        // Chart instances
+        let trendChart = null;
+        let statusChart = null;
+        
+        // Color palette
+        const COLORS = {
+            ph: '#3498db',
+            temperature: '#e74c3c',
+            humidity: '#2ecc71',
+            pressure: '#9b59b6',
+            gas: '#e67e22',
+            air_quality: '#1abc9c',
+            weight: '#f39c12'
+        };
+        
+        // Helper: Get status class
+        function getStatusClass(status) {
+            if (!status) return 'unknown';
+            return status.toLowerCase();
+        }
+        
+        // Helper: Update sensor card
+        function updateSensorCard(sensorId, value, unit, status) {
+            const valueEl = document.getElementById(sensorId + '-value');
+            const statusEl = document.getElementById(sensorId + '-status');
+            
+            if (value !== undefined && value !== null && value !== '--') {
+                valueEl.textContent = typeof value === 'number' ? value.toFixed(1) : value;
+            }
+            
+            if (status) {
+                const displayStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+                statusEl.textContent = displayStatus;
+                statusEl.className = 'status-tag ' + getStatusClass(status);
+            }
+        }
+        
+        // Initialize trend chart
+        function initTrendChart(labels, datasets) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            if (trendChart) {
+                trendChart.destroy();
+            }
+            
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels || ['No Data'],
+                    datasets: datasets || [{
+                        label: 'No Data',
+                        data: [0],
+                        borderColor: '#95a5a6',
+                        backgroundColor: 'rgba(149, 165, 166, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#95a5a6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 12,
+                                font: { size: 11, weight: '500' },
+                                color: '#2c3e50'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { font: { size: 9 }, color: '#95a5a6', maxTicksLimit: 15 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { font: { size: 10 }, color: '#95a5a6' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize status chart
+        function initStatusChart(data) {
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            
+            if (statusChart) {
+                statusChart.destroy();
+            }
+            
+            const defaultData = {
+                labels: ['Normal', 'Warning', 'Critical'],
+                datasets: [{
+                    data: data || [0, 0, 0],
+                    backgroundColor: ['#27ae60', '#f39c12', '#e74c3c'],
+                    borderWidth: 0
+                }]
+            };
+            
+            statusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: defaultData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 10,
+                                font: { size: 11, weight: '500' },
+                                color: '#2c3e50'
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+        
+        // Fetch latest data
+        async function fetchLatest() {
+            try {
+                const response = await fetch('/api/latest');
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const d = data.data;
+                    
+                    updateSensorCard('ph', d.ph, 'pH', d.status);
+                    updateSensorCard('air', d.air_quality, 'AQI', d.status);
+                    updateSensorCard('temp', d.temperature, '°C', d.status);
+                    updateSensorCard('weight', d.weight, 'kg', d.status);
+                    updateSensorCard('pressure', d.pressure, 'hPa', d.status);
+                    updateSensorCard('gas', d.gas, 'ppm', d.status);
+                    
+                    const statusBadge = document.getElementById('systemStatusBadge');
+                    const status = d.status || 'unknown';
+                    const displayStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+                    statusBadge.textContent = displayStatus;
+                    statusBadge.className = 'status-badge ' + getStatusClass(status);
+                }
+                
+                document.getElementById('timestamp').textContent = 'Last update: ' + new Date().toLocaleTimeString();
+                
+            } catch (error) {
+                console.error('Error fetching latest data:', error);
+            }
+        }
+        
+        // Fetch alerts
+        async function fetchAlerts() {
+            try {
+                const response = await fetch('/api/alerts');
+                const data = await response.json();
+                
+                const tbody = document.getElementById('alertsBody');
+                const alertCount = document.getElementById('alertCount');
+                
+                if (data.success && data.alerts && data.alerts.length > 0) {
+                    alertCount.textContent = data.alerts.length;
+                    
+                    tbody.innerHTML = data.alerts.map(alert => {
+                        const alertTexts = [];
+                        if (alert.critical_alerts && alert.critical_alerts.length > 0) {
+                            alert.critical_alerts.forEach(a => {
+                                const sensorName = a.sensor || a;
+                                const value = a.value || '';
+                                alertTexts.push('<span class="critical-text">CRITICAL</span> ' + sensorName + ': ' + value);
+                            });
+                        }
+                        if (alert.warning_alerts && alert.warning_alerts.length > 0) {
+                            alert.warning_alerts.forEach(a => {
+                                const sensorName = a.sensor || a;
+                                const value = a.value || '';
+                                alertTexts.push('<span class="warning-text">WARNING</span> ' + sensorName + ': ' + value);
+                            });
+                        }
+                        
+                        const status = alert.status || 'unknown';
+                        
+                        return `<tr class="alert-row ${status.toLowerCase()}">
+                            <td style="font-size:12px;color:#7f8c8d;">${formatTimestamp(alert.timestamp)}</td>
+                            <td style="font-weight:500;">${alert.device_id}</td>
+                            <td><span class="badge ${status.toLowerCase()}">${status}</span></td>
+                            <td class="alert-text">${alertTexts.join('<br>')}</td>
+                        </tr>`;
+                    }).join('');
+                } else {
+                    alertCount.textContent = '0';
+                    tbody.innerHTML = '<tr><td colspan="4" class="loading">No active alerts</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error fetching alerts:', error);
+            }
+        }
+        
+        // Fetch statistics and update charts
+        async function fetchStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                if (data.success && data.stats) {
+                    const stats = data.stats;
+                    const container = document.getElementById('statsContainer');
+                    
+                    // Build stats HTML
+                    let html = '<div class="stats-grid">';
+                    
+                    // Status counts
+                    if (stats.status_counts) {
+                        html += `
+                            <div class="stat-item">
+                                <div class="stat-label">Normal</div>
+                                <div class="stat-value" style="color:#27ae60;">${stats.status_counts.NORMAL || 0}</div>
+                                <div class="stat-sub">readings</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Warning</div>
+                                <div class="stat-value" style="color:#f39c12;">${stats.status_counts.WARNING || 0}</div>
+                                <div class="stat-sub">readings</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Critical</div>
+                                <div class="stat-value" style="color:#e74c3c;">${stats.status_counts.CRITICAL || 0}</div>
+                                <div class="stat-sub">readings</div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Sensor statistics
+                    const sensors = ['ph', 'air_quality', 'temperature', 'weight', 'pressure', 'gas'];
+                    const labels = {
+                        ph: 'pH',
+                        air_quality: 'Air Quality',
+                        temperature: 'Temperature',
+                        weight: 'Weight',
+                        pressure: 'Pressure',
+                        gas: 'Gas'
+                    };
+                    
+                    sensors.forEach(sensor => {
+                        if (stats[sensor]) {
+                            const s = stats[sensor];
+                            html += `
+                                <div class="stat-item">
+                                    <div class="stat-label">${labels[sensor] || sensor}</div>
+                                    <div class="stat-value">${s.current}</div>
+                                    <div class="stat-sub">Avg: ${s.avg} · Min: ${s.min} · Max: ${s.max}</div>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    html += `
+                        <div class="stat-item" style="grid-column: span 2;">
+                            <div class="stat-label">Total Records</div>
+                            <div class="stat-value">${stats.total_records || 0}</div>
+                            <div class="stat-sub">Last updated: ${formatTimestamp(stats.timestamp)}</div>
+                        </div>
+                    `;
+                    
+                    html += '</div>';
+                    container.innerHTML = html;
+                    
+                    // Update status chart
+                    if (stats.status_counts) {
+                        initStatusChart([
+                            stats.status_counts.NORMAL || 0,
+                            stats.status_counts.WARNING || 0,
+                            stats.status_counts.CRITICAL || 0
+                        ]);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching statistics:', error);
+            }
+        }
+        
+        // Fetch trend data
+        async function fetchTrendData() {
+            try {
+                const response = await fetch('/api/data?limit=20');
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    const records = data.data;
+                    const labels = records.map(r => {
+                        const ts = r.timestamp;
+                        if (ts) {
+                            try { return new Date(ts).toLocaleTimeString(); } 
+                            catch { return ts.substring(11, 16); }
+                        }
+                        return '';
+                    }).reverse();
+                    
+                    const datasets = [
+                        {
+                            label: 'Temperature',
+                            data: records.map(r => r.temperature || 0).reverse(),
+                            borderColor: COLORS.temperature,
+                            backgroundColor: COLORS.temperature + '20',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointBackgroundColor: COLORS.temperature
+                        },
+                        {
+                            label: 'pH',
+                            data: records.map(r => r.ph || 0).reverse(),
+                            borderColor: COLORS.ph,
+                            backgroundColor: COLORS.ph + '20',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointBackgroundColor: COLORS.ph
+                        },
+                        {
+                            label: 'Gas',
+                            data: records.map(r => r.gas || 0).reverse(),
+                            borderColor: COLORS.gas,
+                            backgroundColor: COLORS.gas + '20',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointBackgroundColor: COLORS.gas
+                        }
+                    ];
+                    
+                    initTrendChart(labels, datasets);
+                } else {
+                    initTrendChart(['No Data'], [{
+                        label: 'No Data Available',
+                        data: [0],
+                        borderColor: '#95a5a6',
+                        backgroundColor: 'rgba(149, 165, 166, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#95a5a6'
+                    }]);
+                }
+            } catch (error) {
+                console.error('Error fetching trend data:', error);
+            }
+        }
+        
+        // Refresh data from DynamoDB
+        async function refreshData() {
+            const refreshBtn = document.querySelector('.btn-refresh');
+            const originalText = refreshBtn.innerHTML;
+            
+            try {
+                refreshBtn.innerHTML = '<span>⟳</span> Loading...';
+                refreshBtn.disabled = true;
+                
+                const response = await fetch('/api/refresh');
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('Data refreshed:', data.message);
+                    await fetchAllData();
+                    
+                    const statusBadge = document.getElementById('systemStatusBadge');
+                    const originalStatus = statusBadge.textContent;
+                    statusBadge.textContent = 'Refreshed';
+                    statusBadge.className = 'status-badge normal';
+                    setTimeout(() => {
+                        statusBadge.textContent = originalStatus;
+                    }, 2000);
+                } else {
+                    console.error('Refresh failed:', data.message);
+                }
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+            } finally {
+                refreshBtn.innerHTML = originalText;
+                refreshBtn.disabled = false;
+            }
+        }
+        
+        // Format timestamp
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return 'N/A';
+            try {
+                const dt = new Date(timestamp);
+                return dt.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch {
+                return timestamp;
+            }
+        }
+        
+        // Fetch all data
+        async function fetchAllData() {
+            await Promise.all([
+                fetchLatest(),
+                fetchAlerts(),
+                fetchStats(),
+                fetchTrendData()
+            ]);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchAllData();
+            setInterval(fetchAllData, REFRESH_INTERVAL);
+            console.log('Dashboard initialized. Refresh interval:', REFRESH_INTERVAL / 1000, 'seconds');
+        });
+    </script>
+</body>
+</html>
